@@ -3,6 +3,9 @@
 #include <fstream>
 #include <thread>
 #include <string>
+#include <ctime>
+#include <iomanip>
+#include "ConfReader.hpp"
 #include "BuddhaCalculator.hpp"
 #include "fractal_func.hpp"
 #include "time.hpp"
@@ -44,15 +47,13 @@ void worker(BuddhaCalculator *b, int id, int num_points)
 
 struct options
 {
-    int num_threads;
-    int seconds;
-    int max_iter;
-    bool opt_ok = false;
-    int chunck_size;
+    bool opt_ok = true;
 };
 
 options parse_options(int argc, char const *argv[])
 {
+
+    /**
     options retVal;
     if (argc != 5)
     {
@@ -64,6 +65,7 @@ options parse_options(int argc, char const *argv[])
     retVal.chunck_size = std::atoi(argv[4]);
     retVal.opt_ok = true;
     return retVal;
+    **/
 }
 
 void calc_chunk(std::vector<BuddhaCalculator> *buddha, int num_threads, int points_per_chunk,
@@ -86,7 +88,9 @@ void calc_chunk(std::vector<BuddhaCalculator> *buddha, int num_threads, int poin
         **/
     }
     chunk_counter++;
-    std::cout << "Chunk: " << chunk_counter << " fertig." << '\n';
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    std::cout << std::put_time(&tm, "%d-%m-%Y %H-%M-%S") << ":   Chunk: " << chunk_counter << " fertig." << '\n';
 
     //Zusammenführen
 
@@ -113,35 +117,23 @@ void calc_chunk(std::vector<BuddhaCalculator> *buddha, int num_threads, int poin
 
 int main(int argc, char const *argv[])
 {
-    options opt = parse_options(argc, argv);
+    //Obsolet, vllt für später
+    options opt; // = parse_options(argc, argv);
 
     if (!opt.opt_ok)
     {
         std::cout << "Usage: buddha <num_threads> <time in seconds> <Max Iteration> <chunk size>" << '\n';
         return 1;
     }
-
-    const int num_threads = opt.num_threads;
-    // const int points_per_thread = opt.points_per_thread;
-    const int scale = 10;
-    const float axis_scale = 6.0f;
-    const int points_per_chunk = opt.chunck_size;
-
-    BuddhaParam params;
-    params.pixel_width = 1440 * scale;
-    params.pixel_height = 900 * scale;
-    params.x_axis_min = -1.0f * axis_scale;
-    params.x_axis_max = 1.0f * axis_scale;
-    params.y_axis_min = -1.0f * axis_scale;
-    params.y_axis_max = 1.0f * axis_scale;
-    params.max_iter = opt.max_iter;
-    params.func = auge;
+    setup_fractals();
+    ConfReader conf_reader;
+    conf_data params = conf_reader.readConf("conf.json");
 
     std::vector<BuddhaCalculator> buddha;
 
-    for (size_t i = 0; i < num_threads; i++)
+    for (size_t i = 0; i < params.num_threads; i++)
     {
-        buddha.push_back(BuddhaCalculator(params));
+        buddha.push_back(BuddhaCalculator(params, fractals));
     }
 
     std::vector<std::vector<int>> matrix;
@@ -149,9 +141,9 @@ int main(int argc, char const *argv[])
     int max_hit_count_combined = 0;
     time_meassure t1;
     t1.start();
-    while (t1.stop() < opt.seconds)
+    while (t1.stop() < params.seconds)
     {
-        calc_chunk(&buddha, num_threads, points_per_chunk, &matrix, &max_hit_count_combined);
+        calc_chunk(&buddha, params.num_threads, params.chunck_size, &matrix, &max_hit_count_combined);
         post_processing(matrix, max_hit_count_combined);
     }
 

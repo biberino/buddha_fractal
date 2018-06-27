@@ -2,7 +2,8 @@
 #include <limits>
 #include <iostream>
 
-BuddhaCalculator::BuddhaCalculator(BuddhaParam param)
+BuddhaCalculator::BuddhaCalculator(conf_data param,
+                                   std::vector<std::complex<float> (*)(std::complex<float>, std::complex<float>)> func_array)
 {
     std::srand(static_cast<unsigned int>(time(0)));
     _param = param;
@@ -10,6 +11,7 @@ BuddhaCalculator::BuddhaCalculator(BuddhaParam param)
     std::cout << _pixel_counter_array.size() << '\n';
     _height_const = _param.pixel_height / (_param.y_axis_max - _param.y_axis_min);
     _width_const = _param.pixel_width / (_param.x_axis_max - _param.x_axis_min);
+    _func = func_array[param.func_indentifier];
 }
 
 BuddhaCalculator::~BuddhaCalculator()
@@ -33,7 +35,7 @@ void BuddhaCalculator::calcPoints(int num_points)
         for (size_t j = 0; j < _param.max_iter; j++)
         {
 
-            z = _param.func(z, c);
+            z = _func(z, c);
             hit_buffer.push_back(z);
 
             if (((z.real() * z.real()) + (z.imag() * z.imag())) > _param.bailout_squared)
@@ -50,7 +52,7 @@ void BuddhaCalculator::calcPoints(int num_points)
             //z = std::complex<float>(0, 0);
 
             //hitbuffer übernehmen
-            for(auto var : hit_buffer)
+            for (auto var : hit_buffer)
             {
                 add_number(var);
             }
@@ -59,7 +61,7 @@ void BuddhaCalculator::calcPoints(int num_points)
             for (size_t j = hit_buffer.size(); j < _param.max_iter; j++)
             {
 
-                z = _param.func(z, c);
+                z = _func(z, c);
 
                 if (!isComplexOK(z))
                 {

@@ -5,6 +5,9 @@
 #include <cstdlib>
 #include <ctime>
 
+#include "ConfReader.hpp"
+
+//obsolet
 struct BuddhaParam
 {
     int pixel_width; // x Auflösung in Pixel
@@ -32,7 +35,8 @@ struct Point_int
 class BuddhaCalculator
 {
   private:
-    BuddhaParam _param;
+    conf_data _param;
+    std::complex<float> (*_func)(std::complex<float>, std::complex<float>);
 
     float _width_const;
     float _height_const;
@@ -47,7 +51,8 @@ class BuddhaCalculator
     int _depictable_count = 0;
     std::vector<std::vector<int>> _pixel_counter_array;
     int _max_hit_count = 0;
-    BuddhaCalculator(BuddhaParam param);
+    BuddhaCalculator(conf_data param,
+                     std::vector<std::complex<float> (*)(std::complex<float>, std::complex<float>)> func_array);
     /** 
      * @brief  Berechnet num_points Punkte und speichert deren Abdrücke
      * @note  
