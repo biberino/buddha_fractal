@@ -1,3 +1,5 @@
 output
 out*
 buddha
+*.pgm
+conf_bak.json

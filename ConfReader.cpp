@@ -45,9 +45,11 @@ conf_data ConfReader::readConf(std::string path)
         retVal.func_indentifier = cfg["func_indentifier"];
         retVal.zwilling = cfg["zwilling"];
         retVal.koppl = cfg["koppl"];
-        retVal.chunck_size = cfg["chunck_size"];
+        retVal.chunck_min_points = cfg["chunck_min_points"];
+        retVal.chunck_time_seconds = cfg["chunck_time_seconds"];
         retVal.seconds = cfg["seconds"];
         retVal.num_threads = cfg["num_threads"];
+        retVal.save_raw_result = cfg["save_raw_result"];
 
         return retVal;
     }

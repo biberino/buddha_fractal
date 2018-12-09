@@ -14,7 +14,10 @@
     "func_indentifier": 0,
     "zwilling": false,
     "koppl": 0.5,
-    "chunck_size": 10000,
-    "seconds": 10,
-    "num_threads": 2
+    "chunck_min_points": 50,
+    "chunck_time_seconds": 25,
+    "seconds": 60,
+    "num_threads": 3,
+
+    "save_raw_result": true
 }

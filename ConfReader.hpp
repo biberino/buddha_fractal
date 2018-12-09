@@ -6,25 +6,28 @@ struct conf_data
 {
     int pixel_width = 14400; // x Auflösung in Pixel
     int pixel_height = 9000;
-    float x_axis_min = -2.0f;
-    float x_axis_max = 2.0f;
-    float y_axis_min = -2.0f;
-    float y_axis_max = 2.0f; // y Auflösung in Pixel
-    float real_min = -4.0f;  // untere Schranke für Zufällige C, realanteil
-    float real_max = 4.0f;   // obere Schranke für Zufällige C, realanteil
-    float im_min = -4.0f;    // untere Schranke für Zufällige C, imaginär
-    float im_max = 4.0f;     // obere Schranke für Zufällige C, imaginär
+    double x_axis_min = -2.0f;
+    double x_axis_max = 2.0f;
+    double y_axis_min = -2.0f;
+    double y_axis_max = 2.0f; // y Auflösung in Pixel
+    double real_min = -4.0f;  // untere Schranke für Zufällige C, realanteil
+    double real_max = 4.0f;   // obere Schranke für Zufällige C, realanteil
+    double im_min = -4.0f;    // untere Schranke für Zufällige C, imaginär
+    double im_max = 4.0f;     // obere Schranke für Zufällige C, imaginär
     int max_iter = 50000;    // maximale Iteration pro Punkt
     int bailout_squared = 4; // quadrierter Abstand zum Ursprung ab dem ein Punkt nicht mehr zur Menge gehört
     //int number_points;                                                     // anzahl Punkte die berechnet werden
-    //std::complex<float> (*func)(std::complex<float>, std::complex<float>); // Funktion zur Berechnung eines iterationsschritts
+    //std::complex<double> (*func)(std::complex<double>, std::complex<double>); // Funktion zur Berechnung eines iterationsschritts
     int func_indentifier = 0; // wählt Fraktalgleichung aus
     bool zwilling = false;
-    float koppl = 0.0f;
+    double koppl = 0.0f;
 
-    int chunck_size = 10000;
+    int chunck_min_points = 20;
+    int chunck_time_seconds = 10;
     int seconds = 100;
     int num_threads = 2;
+
+    bool save_raw_result = false;
 };
 
 class ConfReader

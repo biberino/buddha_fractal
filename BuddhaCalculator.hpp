@@ -12,18 +12,18 @@ struct BuddhaParam
 {
     int pixel_width; // x Auflösung in Pixel
     int pixel_height;
-    float x_axis_min;
-    float x_axis_max;
-    float y_axis_min;
-    float y_axis_max;        // y Auflösung in Pixel
-    float real_min = -4.0f;  // untere Schranke für Zufällige C, realanteil
-    float real_max = 4.0f;   // obere Schranke für Zufällige C, realanteil
-    float im_min = -4.0f;    // untere Schranke für Zufällige C, imaginär
-    float im_max = 4.0f;     // obere Schranke für Zufällige C, imaginär
+    double x_axis_min;
+    double x_axis_max;
+    double y_axis_min;
+    double y_axis_max;        // y Auflösung in Pixel
+    double real_min = -4.0f;  // untere Schranke für Zufällige C, realanteil
+    double real_max = 4.0f;   // obere Schranke für Zufällige C, realanteil
+    double im_min = -4.0f;    // untere Schranke für Zufällige C, imaginär
+    double im_max = 4.0f;     // obere Schranke für Zufällige C, imaginär
     int max_iter;            // maximale Iteration pro Punkt
     int bailout_squared = 4; // quadrierter Abstand zum Ursprung ab dem ein Punkt nicht mehr zur Menge gehört
     //int number_points;                                                     // anzahl Punkte die berechnet werden
-    std::complex<float> (*func)(std::complex<float>, std::complex<float>); // Funktion zur Berechnung eines iterationsschritts
+    std::complex<double> (*func)(std::complex<double>, std::complex<double>); // Funktion zur Berechnung eines iterationsschritts
 };
 
 struct Point_int
@@ -36,15 +36,15 @@ class BuddhaCalculator
 {
   private:
     conf_data _param;
-    std::complex<float> (*_func)(std::complex<float>, std::complex<float>);
+    std::complex<double> (*_func)(std::complex<double>, std::complex<double>);
 
-    float _width_const;
-    float _height_const;
+    double _width_const;
+    double _height_const;
 
-    inline bool isComplexOK(std::complex<float> number);
-    inline void add_number(std::complex<float> n);
+    inline bool isComplexOK(std::complex<double> number);
+    inline void add_number(std::complex<double> n);
 
-    inline Point_int complexToPoint(std::complex<float> number);
+    inline Point_int complexToPoint(std::complex<double> number);
 
   public:
     int _undepictable_count = 0;
@@ -52,13 +52,15 @@ class BuddhaCalculator
     std::vector<std::vector<int>> _pixel_counter_array;
     int _max_hit_count = 0;
     BuddhaCalculator(conf_data param,
-                     std::vector<std::complex<float> (*)(std::complex<float>, std::complex<float>)> func_array);
+                     std::vector<std::complex<double> (*)(std::complex<double>, std::complex<double>)> func_array);
     /** 
-     * @brief  Berechnet num_points Punkte und speichert deren Abdrücke
+     * @brief  Berechnet sec Sekunden lang Punkte und speichert deren Abdrücke
      * @note  
      * @retval None
      */
-    void calcPoints(int num_points);
+    void calcPoints(int sec);
+
+    void resetState();
     ~BuddhaCalculator();
 };
 

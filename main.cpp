@@ -5,16 +5,22 @@
 #include <string>
 #include <ctime>
 #include <iomanip>
+#include <sys/stat.h>
 #include "ConfReader.hpp"
 #include "BuddhaCalculator.hpp"
 #include "fractal_func.hpp"
 #include "time.hpp"
+#include "save_raw.hpp"
 
 int chunk_counter = 0;
 
-void post_processing(std::vector<std::vector<int>> &matrix, int max_value)
+void post_processing(std::vector<std::vector<int>> &matrix, int max_value, conf_data *params)
 {
-    std::string out = "out" + std::to_string(chunk_counter) + ".pgm";
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    std::ostringstream os;
+    os << std::put_time(&tm, "%d-%m-%Y %H-%M-%S") << ":   Chunk:" << chunk_counter << " Fraktal: " << std::to_string(params->func_indentifier) << ".pgm";
+    std::string out = os.str(); //"out" + std::to_string(chunk_counter) + ".pgm";
     std::ofstream f(out, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
 
     int maxColorValue = 255;
@@ -24,14 +30,15 @@ void post_processing(std::vector<std::vector<int>> &matrix, int max_value)
     // std::endl == "\n" + std::flush
     // we do not want std::flush here.
     //TODO: optimize file output
-    std::cout << "Writing to File..." << '\n';
+    std::cout << "Exportiere Bild..." << '\n';
+    std::cout << "Allokiere Speicher für Bildexport: " << matrix.size() / 1024 << "KByte" << '\n';
     for (size_t y = 0; y < matrix[0].size(); y++)
     {
         char buffer[matrix.size()];
         for (size_t x = 0; x < matrix.size(); x++)
         {
-            float transformed_pixel = log((float)matrix[x][y]);
-            float transformed_max_value = log((float)max_value);
+            double transformed_pixel = log((double)matrix[x][y]);
+            double transformed_max_value = log((double)max_value);
             //linear scaling
             buffer[x] = (char)((transformed_pixel / transformed_max_value) * 255.0f);
         }
@@ -39,42 +46,38 @@ void post_processing(std::vector<std::vector<int>> &matrix, int max_value)
     }
 }
 
-void worker(BuddhaCalculator *b, int id, int num_points)
+void worker(BuddhaCalculator *b, int id, int sec)
 {
-    std::cout << "Worker " << id << " started." << '\n';
-    b->calcPoints(num_points);
+    //std::cout << "Worker " << id << " started." << '\n';
+    b->calcPoints(sec);
 }
 
 struct options
 {
-    bool opt_ok = true;
+    std::string raw_input_file = "";
 };
 
 options parse_options(int argc, char const *argv[])
 {
 
-    /**
     options retVal;
-    if (argc != 5)
+    if (argc != 2)
     {
         return retVal;
     }
-    retVal.num_threads = std::atoi(argv[1]);
-    retVal.seconds = std::atoi(argv[2]);
-    retVal.max_iter = std::atoi(argv[3]);
-    retVal.chunck_size = std::atoi(argv[4]);
-    retVal.opt_ok = true;
+
+    retVal.raw_input_file = argv[1];
+
     return retVal;
-    **/
 }
 
-void calc_chunk(std::vector<BuddhaCalculator> *buddha, int num_threads, int points_per_chunk,
+void calc_chunk(std::vector<BuddhaCalculator> *buddha, int num_threads, int chunck_time_sec,
                 std::vector<std::vector<int>> *matrix, int *max_hit_count_combined)
 {
     std::vector<std::thread> threads;
     for (size_t i = 0; i < num_threads; i++)
     {
-        threads.push_back(std::thread(worker, &((*buddha)[i]), i, points_per_chunk));
+        threads.push_back(std::thread(worker, &((*buddha)[i]), i, chunck_time_sec));
     }
 
     for (size_t i = 0; i < num_threads; i++)
@@ -98,33 +101,32 @@ void calc_chunk(std::vector<BuddhaCalculator> *buddha, int num_threads, int poin
     {
         for (size_t j = 0; j < (*matrix)[0].size(); j++)
         {
-            int sum = 0;
+            //int sum = 0;
 
             for (size_t k = 0; k < num_threads; k++)
             {
-                sum += (*buddha)[k]._pixel_counter_array[i][j];
+                (*matrix)[i][j] += (*buddha)[k]._pixel_counter_array[i][j];
             }
 
-            (*matrix)[i][j] = sum;
+            //(*matrix)[i][j] = sum;
 
-            if (*max_hit_count_combined < sum)
+            if (*max_hit_count_combined < (*matrix)[i][j])
             {
-                *max_hit_count_combined = sum;
+                *max_hit_count_combined = (*matrix)[i][j];
             }
         }
+    }
+
+    for (size_t k = 0; k < num_threads; k++)
+    {
+        (*buddha)[k].resetState();
     }
 }
 
 int main(int argc, char const *argv[])
 {
-    //Obsolet, vllt für später
-    options opt; // = parse_options(argc, argv);
+    options opt = parse_options(argc, argv);
 
-    if (!opt.opt_ok)
-    {
-        std::cout << "Usage: buddha <num_threads> <time in seconds> <Max Iteration> <chunk size>" << '\n';
-        return 1;
-    }
     setup_fractals();
     ConfReader conf_reader;
     conf_data params = conf_reader.readConf("conf.json");
@@ -139,12 +141,33 @@ int main(int argc, char const *argv[])
     std::vector<std::vector<int>> matrix;
     matrix.resize(params.pixel_width, std::vector<int>(params.pixel_height, 0));
     int max_hit_count_combined = 0;
+
+    if (opt.raw_input_file != "")
+    {
+        struct stat buffer;
+        if (stat(opt.raw_input_file.c_str(), &buffer) == 0)
+        {
+            std::cout << "Lese Ergebnissdatei ein..." << '\n';
+            read_raw_data(opt.raw_input_file, matrix, params);
+        }
+    }
+
+    std::cout << "Beginne Berechnung" << '\n';
+
     time_meassure t1;
     t1.start();
     while (t1.stop() < params.seconds)
     {
-        calc_chunk(&buddha, params.num_threads, params.chunck_size, &matrix, &max_hit_count_combined);
-        post_processing(matrix, max_hit_count_combined);
+        calc_chunk(&buddha, params.num_threads, params.chunck_time_seconds, &matrix, &max_hit_count_combined);
+        post_processing(matrix, max_hit_count_combined, &params);
+
+        if (params.save_raw_result)
+        {
+            if (opt.raw_input_file != "")
+            {
+                dump_raw_data(opt.raw_input_file, matrix, params);
+            }
+        }
     }
 
     return 0;
