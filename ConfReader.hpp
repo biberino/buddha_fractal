@@ -23,11 +23,11 @@ struct conf_data
     double koppl = 0.0f;
 
     int chunck_min_points = 20;
-    int chunck_time_seconds = 10;
+    int chunck_time_seconds = 100;
     int seconds = 100;
     int num_threads = 2;
-
     bool save_raw_result = false;
+    bool anti = false;
 };
 
 class ConfReader

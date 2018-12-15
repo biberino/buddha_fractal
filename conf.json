@@ -15,9 +15,9 @@
     "zwilling": false,
     "koppl": 0.5,
     "chunck_min_points": 50,
-    "chunck_time_seconds": 25,
+    "chunck_time_seconds": 60,
     "seconds": 60,
     "num_threads": 3,
-
-    "save_raw_result": true
+    "save_raw_result": true,
+    "anti": true
 }

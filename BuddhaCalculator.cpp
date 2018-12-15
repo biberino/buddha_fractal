@@ -9,12 +9,15 @@ BuddhaCalculator::BuddhaCalculator(conf_data param,
 {
     std::srand(static_cast<unsigned int>(time(0)));
     _param = param;
-    std::cout << "Allokiere Speicher für Worker: " << (param.pixel_height*param.pixel_width*4)/1024 << " KBytes." << '\n';
+    std::cout << "Allokiere Speicher für Worker: " << (param.pixel_height * param.pixel_width * 4) / 1024 << " KBytes." << '\n';
     _pixel_counter_array.resize(param.pixel_width, std::vector<int>(param.pixel_height, 0));
 
     _height_const = _param.pixel_height / (_param.y_axis_max - _param.y_axis_min);
     _width_const = _param.pixel_width / (_param.x_axis_max - _param.x_axis_min);
     _func = func_array[param.func_indentifier];
+
+    std::cout << "Allokiere Speicher für Hitbuffer: " << (sizeof(std::complex<double>) * _param.max_iter) / 1024 << "KBytes" << '\n';
+    _hit_buffer.resize(_param.max_iter, std::complex<double>(0, 0));
 }
 
 BuddhaCalculator::~BuddhaCalculator()
@@ -26,25 +29,31 @@ void BuddhaCalculator::calcPoints(int sec)
     time_meassure ellapsed_time;
     ellapsed_time.start();
 
+    
+
     while (ellapsed_time.stop() < sec)
     {
 
         for (size_t i = 0; i < _param.chunck_min_points; i++)
         {
-            //TODO: random funktioniert nicht
+            _number_of_valid_values = 0; //for hitbuffer
+
             double r1 = _param.real_min + static_cast<double>(rand()) / (static_cast<double>(RAND_MAX / (_param.real_max - _param.real_min)));
             double r2 = _param.im_min + static_cast<double>(rand()) / (static_cast<double>(RAND_MAX / (_param.im_max - _param.im_min)));
             std::complex<double> c(r1, r2);
             std::complex<double> z(0, 0);
             //optimierung
-            std::vector<std::complex<double>> hit_buffer;
+            //TODO SPeicherplatz vorher allokieren, wächst mit Anzahl Max Iterationen
+            //oder mit array arbeiten, wobei immer ein nullptr vorgeschoben wird
+
             bool in_set = true;
 
             for (size_t j = 0; j < _param.max_iter; j++)
             {
 
                 z = _func(z, c);
-                hit_buffer.push_back(z);
+                _hit_buffer[_number_of_valid_values] = z;
+                _number_of_valid_values++;
 
                 if (((z.real() * z.real()) + (z.imag() * z.imag())) > _param.bailout_squared)
                 {
@@ -55,31 +64,45 @@ void BuddhaCalculator::calcPoints(int sec)
                 }
             }
 
-            if (!in_set)
+            if (_param.anti)
             {
-                //z = std::complex<double>(0, 0);
-
-                //hitbuffer übernehmen
-                for (auto var : hit_buffer)
+                if (in_set)
                 {
-                    add_number(var);
-                }
-
-                //eigentliche Pfadberechnung
-                for (size_t j = hit_buffer.size(); j < _param.max_iter; j++)
-                {
-
-                    z = _func(z, c);
-
-                    if (!isComplexOK(z))
+                    //hitbuffer übernehmen
+                    for (int i=0;i < _number_of_valid_values; i++)
                     {
-                        break;
+                        add_number(_hit_buffer[i]);
+                    }
+                }
+            }
+            else
+            {
+                if (!in_set)
+                {
+                    //z = std::complex<double>(0, 0);
+
+                    //hitbuffer übernehmen
+                    for (int i=0;i < _number_of_valid_values; i++)
+                    {
+                        add_number(_hit_buffer[i]);
                     }
 
-                    //Zahl, wenn darstellbar, in Pixelarray eintragen
-                    add_number(z);
+                    //eigentliche Pfadberechnung
+                    for (size_t j = _number_of_valid_values; j < _param.max_iter; j++)
+                    {
+
+                        z = _func(z, c);
+
+                        if (!isComplexOK(z))
+                        {
+                            break;
+                        }
+
+                        //Zahl, wenn darstellbar, in Pixelarray eintragen
+                        add_number(z);
+                    }
+                    //std::cout << std::endl;
                 }
-                //std::cout << std::endl;
             }
         }
     }

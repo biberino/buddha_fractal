@@ -51,6 +51,8 @@ class BuddhaCalculator
     int _depictable_count = 0;
     std::vector<std::vector<int>> _pixel_counter_array;
     int _max_hit_count = 0;
+    std::vector<std::complex<double>> _hit_buffer;
+    int _number_of_valid_values = 0;
     BuddhaCalculator(conf_data param,
                      std::vector<std::complex<double> (*)(std::complex<double>, std::complex<double>)> func_array);
     /** 

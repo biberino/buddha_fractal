@@ -50,6 +50,7 @@ conf_data ConfReader::readConf(std::string path)
         retVal.seconds = cfg["seconds"];
         retVal.num_threads = cfg["num_threads"];
         retVal.save_raw_result = cfg["save_raw_result"];
+        retVal.anti = cfg["anti"];
 
         return retVal;
     }
